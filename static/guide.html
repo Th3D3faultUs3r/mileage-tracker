@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mileage Tracker — How to Use</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f4f8;
+    color: #1a1a2e;
+    padding-bottom: 40px;
+  }
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    padding: 32px 20px 24px;
+    text-align: center;
+  }
+  header h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+  header p { font-size: 14px; color: #aab8c2; }
+  header a { color: #4ecdc4; text-decoration: none; font-size: 13px; }
+
+  .toc {
+    background: white;
+    margin: 16px;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .toc h2 { font-size: 14px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .toc a { display: block; color: #1a7a4a; text-decoration: none; padding: 6px 0; font-size: 15px; border-bottom: 1px solid #f0f0f0; }
+  .toc a:last-child { border-bottom: none; }
+  .toc a::before { content: '→ '; }
+
+  section {
+    background: white;
+    margin: 16px;
+    border-radius: 12px;
+    padding: 24px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  section h2 .num {
+    background: #1a7a4a;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  section p { font-size: 15px; line-height: 1.6; color: #444; margin-bottom: 14px; }
+
+  .platform-block { margin-bottom: 20px; }
+  .platform-block h3 { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 10px; }
+
+  ol, ul { padding-left: 0; list-style: none; }
+  ol li, ul li {
+    padding: 10px 14px 10px 46px;
+    border-radius: 8px;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    background: #f7f9fc;
+    position: relative;
+  }
+  ol { counter-reset: steps; }
+  ol li::before {
+    counter-increment: steps;
+    content: counter(steps);
+    position: absolute;
+    left: 14px;
+    top: 10px;
+    background: #1a7a4a;
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 22px;
+  }
+  ul li::before {
+    content: '•';
+    position: absolute;
+    left: 18px;
+    color: #1a7a4a;
+    font-size: 18px;
+    line-height: 1.4;
+  }
+  ol li sub, ul li sub { font-size: 13px; color: #666; display: block; margin-top: 3px; }
+
+  .tip {
+    background: #e8f5ee;
+    border-left: 4px solid #1a7a4a;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: #2d6a4f;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+  .tip strong { display: block; margin-bottom: 2px; }
+
+  .table-wrap { overflow-x: auto; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: #1a1a2e; color: white; text-align: left; padding: 10px 12px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #f7f9fc; }
+
+  .open-app {
+    display: block;
+    background: linear-gradient(135deg, #1a7a4a, #25a870);
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    margin: 16px;
+    box-shadow: 0 4px 12px rgba(26,122,74,0.3);
+  }
+
+  footer { text-align: center; color: #999; font-size: 13px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 Mileage Tracker</h1>
+  <p>Quick guide for Instacart &amp; DoorDash drivers</p>
+</header>
+
+<a class="open-app" href="/">Open the App</a>
+
+<div class="toc">
+  <h2>Jump to a section</h2>
+  <a href="#install">Install on your phone</a>
+  <a href="#track">Track a trip with GPS</a>
+  <a href="#manual">Log a past trip</a>
+  <a href="#summary">See your tax deduction</a>
+  <a href="#history">View &amp; delete trips</a>
+  <a href="#export">Export to CSV for taxes</a>
+</div>
+
+<!-- Section 1 -->
+<section id="install">
+  <h2><span class="num">1</span>Install on Your Phone</h2>
+  <p>No App Store needed. Add it to your home screen like a normal app — takes 30 seconds.</p>
+
+  <div class="platform-block">
+    <h3>📱 iPhone (Safari)</h3>
+    <ol>
+      <li>Open Safari and go to this page.</li>
+      <li>Tap the <strong>Share</strong> button — the box with an arrow pointing up at the bottom of the screen.</li>
+      <li>Scroll down and tap <strong>"Add to Home Screen."</strong></li>
+      <li>Tap <strong>Add</strong>. Done — the app icon appears on your home screen.</li>
+    </ol>
+  </div>
+
+  <div class="platform-block">
+    <h3>🤖 Android (Chrome)</h3>
+    <ol>
+      <li>Open Chrome and go to this page.</li>
+      <li>Tap the <strong>three-dot menu</strong> in the top right corner.</li>
+      <li>Tap <strong>"Add to Home screen."</strong></li>
+      <li>Tap <strong>Add</strong>. Done.</li>
+    </ol>
+  </div>
+
+  <div class="tip"><strong>💡 Tip</strong>Once installed, open it from your home screen like any other app. It works even with spotty signal.</div>
+</section>
+
+<!-- Section 2 -->
+<section id="track">
+  <h2><span class="num">2</span>Track a Trip with GPS</h2>
+  <p>The app uses your phone's GPS to measure how far you drove — automatically.</p>
+  <ol>
+    <li>Open the app. You'll land on the <strong>Track</strong> tab.</li>
+    <li>Tap <strong>Instacart</strong>, <strong>DoorDash</strong>, or <strong>Other</strong> to pick your platform.</li>
+    <li>Tap <strong>"Start Trip."</strong><sub>If asked for location permission, tap Allow.</sub></li>
+    <li>Drive your route. The app tracks in the background and shows a live timer.</li>
+    <li>When you're done, tap <strong>"End Trip."</strong></li>
+    <li>A popup shows your GPS-estimated miles. Adjust if needed, then tap <strong>Save.</strong></li>
+  </ol>
+  <div class="tip"><strong>💡 Tip</strong>If GPS wasn't running, just type in the miles manually on the End Trip screen — no problem.</div>
+</section>
+
+<!-- Section 3 -->
+<section id="manual">
+  <h2><span class="num">3</span>Log a Past Trip</h2>
+  <p>Forgot to track? Add it after the fact.</p>
+  <ol>
+    <li>On the <strong>Track</strong> tab, tap <strong>"Log Past Trip"</strong> (below the Start Trip button).</li>
+    <li>Enter the date, platform, and miles.</li>
+    <li>Add a note if you want, then tap <strong>Save.</strong></li>
+  </ol>
+</section>
+
+<!-- Section 4 -->
+<section id="summary">
+  <h2><span class="num">4</span>See Your Tax Deduction</h2>
+  <p>The app calculates your IRS deduction automatically — <strong>$0.70 per mile</strong> (2025 standard rate).</p>
+  <ol>
+    <li>Tap the <strong>Summary</strong> tab at the bottom.</li>
+    <li>Use the <strong>Year</strong> and <strong>Month</strong> dropdowns to pick the period you want.</li>
+  </ol>
+  <p>You'll see:</p>
+  <ul>
+    <li>Total miles driven</li>
+    <li>Your total tax deduction in dollars</li>
+    <li>A breakdown by platform</li>
+  </ul>
+  <div class="tip"><strong>💡 Tip</strong>Set month to "All Months" to see your full-year total — that's the number you need at tax time.</div>
+</section>
+
+<!-- Section 5 -->
+<section id="history">
+  <h2><span class="num">5</span>View &amp; Delete Trips</h2>
+  <ol>
+    <li>Tap the <strong>History</strong> tab.</li>
+    <li>Scroll through your trips. Each card shows the date, platform, miles, and deduction.</li>
+    <li>To delete a trip, tap the <strong>trash icon</strong> on that card and confirm.</li>
+  </ol>
+</section>
+
+<!-- Section 6 -->
+<section id="export">
+  <h2><span class="num">6</span>Export to CSV for Taxes</h2>
+  <p>Download all your trips as a spreadsheet — perfect for your accountant or tax software.</p>
+  <ol>
+    <li>Go to the <strong>Summary</strong> tab.</li>
+    <li>Select the <strong>year</strong> you want.</li>
+    <li>Tap <strong>"Export CSV."</strong></li>
+    <li>The file downloads to your device. Open it in Excel or Google Sheets.<sub>It includes every trip plus a totals row at the bottom.</sub></li>
+  </ol>
+  <div class="tip"><strong>💡 Tip</strong>Save this file somewhere safe — it's your official mileage log for taxes.</div>
+</section>
+
+<!-- Quick ref -->
+<section>
+  <h2 style="margin-bottom:14px;">Quick Reference</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Tab</th><th>What it does</th></tr>
+      <tr><td><strong>Track</strong></td><td>Start GPS tracking or log a past trip</td></tr>
+      <tr><td><strong>Summary</strong></td><td>Total miles, tax deduction, platform breakdown, CSV export</td></tr>
+      <tr><td><strong>History</strong></td><td>Every trip you've logged; tap trash to delete</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>IRS Standard Mileage Rate 2025: $0.70/mile</footer>
+
+</body>
+</html>
