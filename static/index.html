@@ -255,6 +255,7 @@
   .modal-actions button { flex: 1; padding: 14px; border-radius: 10px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; }
   .btn-cancel { background: var(--border); color: var(--text); }
   .btn-confirm { background: var(--green); color: #fff; }
+  .btn-discard-link { background: none; border: none; color: var(--red); font-size: 0.9rem; cursor: pointer; padding: 10px 0 0; width: 100%; text-align: center; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -346,9 +347,10 @@
     <label>Notes (optional)</label>
     <input type="text" id="stop-notes" placeholder="e.g. evening shift, downtown">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-cancel" onclick="closeModal()">Keep Running</button>
       <button class="btn-confirm" onclick="saveTrip()">Save Trip</button>
     </div>
+    <button class="btn-discard-link" onclick="discardTrip()">Discard Trip (don't save)</button>
   </div>
 </div>
 
@@ -468,6 +470,12 @@ function closeModal() {
   document.getElementById('stop-modal').classList.remove('open');
 }
 
+function discardTrip() {
+  stopTrip();
+  closeModal();
+  showToast('🗑 Trip discarded');
+}
+
 function calcGpsDistance() {
   if (gpsPoints.length < 2) return 0;
   let totalKm = 0;
@@ -487,7 +495,7 @@ function haversine(a, b) {
 
 async function saveTrip() {
   const miles = parseFloat(document.getElementById('stop-miles').value);
-  if (!miles || miles <= 0) { alert('Please enter miles greater than 0.'); return; }
+  if (!miles || miles <= 0) { alert('Enter how many miles you drove, or tap "Discard Trip" to cancel without saving.'); return; }
 
   const endTime = new Date();
   const dateStr = tripStartTime.toISOString().split('T')[0];
