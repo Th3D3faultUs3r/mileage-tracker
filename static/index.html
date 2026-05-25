@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>Mile Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f1a;
+    --card: #1a1a2e;
+    --accent: #4f8ef7;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #2d3748;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  header {
+    background: var(--card);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; }
+  header span { font-size: 0.8rem; color: var(--muted); }
+
+  nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 10;
+  }
+  nav button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 12px 4px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+  nav button.active { color: var(--accent); }
+  nav button svg { width: 22px; height: 22px; }
+
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+
+  /* TRIP PAGE */
+  .trip-status {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    border: 2px solid var(--border);
+    transition: border-color 0.3s;
+  }
+  .trip-status.running { border-color: var(--green); }
+  .status-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .status-timer { font-size: 2.5rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); display: none; }
+  .status-idle { font-size: 1.1rem; color: var(--muted); }
+
+  .big-btn {
+    width: 100%;
+    padding: 20px;
+    border-radius: 14px;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-start { background: var(--green); color: #fff; }
+  .btn-stop { background: var(--red); color: #fff; }
+  .big-btn:active { transform: scale(0.97); }
+
+  .platform-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .platform-btn {
+    padding: 12px 6px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .platform-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.1); }
+
+  label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px; margin-top: 16px; }
+  input, textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); }
+
+  .manual-section { display: none; margin-top: 16px; }
+  .manual-section.visible { display: block; }
+
+  .gps-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--green);
+    background: rgba(34,197,94,0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .gps-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* SUMMARY PAGE */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 18px 14px;
+    border: 1px solid var(--border);
+  }
+  .stat-card.full { grid-column: 1 / -1; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+  .stat-value { font-size: 1.6rem; font-weight: 700; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  .month-select {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .month-select select {
+    flex: 1;
+  }
+  .export-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  .export-btn:active { opacity: 0.85; }
+
+  /* HISTORY PAGE */
+  .trip-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .trip-info { flex: 1; }
+  .trip-date { font-size: 0.8rem; color: var(--muted); }
+  .trip-platform {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 4px;
+  }
+  .platform-instacart { background: rgba(79,142,247,0.2); color: #7eb3ff; }
+  .platform-doordash { background: rgba(239,68,68,0.2); color: #fca5a5; }
+  .platform-other { background: rgba(148,163,184,0.2); color: #94a3b8; }
+  .trip-miles { font-size: 1.3rem; font-weight: 700; text-align: right; }
+  .trip-deduction { font-size: 0.75rem; color: var(--green); text-align: right; }
+  .trip-notes { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 0.95rem;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 36px;
+    width: 100%;
+    border-top: 1px solid var(--border);
+  }
+  .modal h3 { font-size: 1.1rem; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions button { flex: 1; padding: 14px; border-radius: 10px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .btn-cancel { background: var(--border); color: var(--text); }
+  .btn-confirm { background: var(--green); color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 Mile Tracker</h1>
+  <span id="year-label"></span>
+</header>
+
+<!-- PAGES -->
+<div id="page-trip" class="page active">
+  <div class="trip-status" id="trip-status">
+    <div class="status-label" id="status-label">Ready to track</div>
+    <div class="status-timer" id="timer">00:00:00</div>
+    <div class="status-idle" id="status-idle">No trip in progress</div>
+  </div>
+
+  <div class="platform-row">
+    <button class="platform-btn selected" data-platform="Instacart" onclick="selectPlatform(this)">🛒 Instacart</button>
+    <button class="platform-btn" data-platform="DoorDash" onclick="selectPlatform(this)">🍕 DoorDash</button>
+    <button class="platform-btn" data-platform="Other" onclick="selectPlatform(this)">📦 Other</button>
+  </div>
+
+  <div id="gps-badge" class="gps-badge" style="display:none">
+    <div class="gps-dot"></div> GPS Tracking Active
+  </div>
+
+  <button id="main-btn" class="big-btn btn-start" onclick="toggleTrip()">▶ START TRIP</button>
+
+  <div class="manual-section" id="manual-section">
+    <label>Miles Driven (enter manually)</label>
+    <input type="number" id="manual-miles" placeholder="0.0" step="0.1" min="0">
+    <label>Notes (optional)</label>
+    <input type="text" id="trip-notes" placeholder="e.g. Downtown zone, busy night">
+  </div>
+</div>
+
+<div id="page-summary" class="page">
+  <div class="month-select">
+    <select id="year-select" onchange="loadSummary()"></select>
+    <select id="month-select" onchange="loadSummary()">
+      <option value="">Full Year</option>
+      <option value="1">January</option>
+      <option value="2">February</option>
+      <option value="3">March</option>
+      <option value="4">April</option>
+      <option value="5">May</option>
+      <option value="6">June</option>
+      <option value="7">July</option>
+      <option value="8">August</option>
+      <option value="9">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+  </div>
+
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Miles</div>
+      <div class="stat-value accent" id="sum-miles">—</div>
+      <div class="stat-sub" id="sum-trips">— trips</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tax Deduction</div>
+      <div class="stat-value green" id="sum-deduction">—</div>
+      <div class="stat-sub">@ $0.70/mile (2025)</div>
+    </div>
+    <div class="stat-card full" id="by-platform-card">
+      <div class="stat-label">By Platform</div>
+      <div id="by-platform">—</div>
+    </div>
+  </div>
+
+  <button class="export-btn" onclick="exportCSV()">⬇ Download CSV for Taxes</button>
+</div>
+
+<div id="page-history" class="page">
+  <div id="history-list"></div>
+</div>
+
+<!-- Stop Trip Modal -->
+<div class="modal-overlay" id="stop-modal">
+  <div class="modal">
+    <h3>End Trip</h3>
+    <div id="gps-result" style="margin-bottom:12px;color:var(--muted);font-size:0.85rem;"></div>
+    <label>Miles This Trip</label>
+    <input type="number" id="stop-miles" placeholder="0.0" step="0.1" min="0">
+    <label>Notes (optional)</label>
+    <input type="text" id="stop-notes" placeholder="e.g. evening shift, downtown">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="saveTrip()">Save Trip</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <button class="active" onclick="showPage('trip', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Track
+  </button>
+  <button onclick="showPage('summary', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    Summary
+  </button>
+  <button onclick="showPage('history', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v10l4 4"/><circle cx="12" cy="12" r="10"/></svg>
+    History
+  </button>
+</nav>
+
+<script>
+let tripRunning = false;
+let tripStartTime = null;
+let timerInterval = null;
+let selectedPlatform = 'Instacart';
+let gpsWatcher = null;
+let gpsPoints = [];
+let gpsSupported = 'geolocation' in navigator;
+
+// Init
+const now = new Date();
+document.getElementById('year-label').textContent = now.getFullYear();
+const yearSelect = document.getElementById('year-select');
+for (let y = now.getFullYear(); y >= 2024; y--) {
+  const opt = document.createElement('option');
+  opt.value = y; opt.textContent = y;
+  yearSelect.appendChild(opt);
+}
+document.getElementById('month-select').value = '';
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'summary') loadSummary();
+  if (name === 'history') loadHistory();
+}
+
+function selectPlatform(el) {
+  document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPlatform = el.dataset.platform;
+}
+
+function toggleTrip() {
+  if (!tripRunning) {
+    startTrip();
+  } else {
+    openStopModal();
+  }
+}
+
+function startTrip() {
+  tripRunning = true;
+  tripStartTime = new Date();
+  gpsPoints = [];
+
+  document.getElementById('trip-status').classList.add('running');
+  document.getElementById('status-label').textContent = 'Trip in Progress';
+  document.getElementById('status-idle').style.display = 'none';
+  document.getElementById('timer').style.display = 'block';
+  document.getElementById('main-btn').className = 'big-btn btn-stop';
+  document.getElementById('main-btn').textContent = '⬛ END TRIP';
+  document.getElementById('manual-section').classList.remove('visible');
+
+  timerInterval = setInterval(updateTimer, 1000);
+
+  // Start GPS if available
+  if (gpsSupported) {
+    document.getElementById('gps-badge').style.display = 'inline-flex';
+    gpsWatcher = navigator.geolocation.watchPosition(
+      pos => { gpsPoints.push({lat: pos.coords.latitude, lng: pos.coords.longitude}); },
+      err => { console.log('GPS error:', err.message); },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+    );
+  } else {
+    document.getElementById('manual-section').classList.add('visible');
+  }
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - tripStartTime) / 1000);
+  const h = String(Math.floor(elapsed / 3600)).padStart(2,'0');
+  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2,'0');
+  const s = String(elapsed % 60).padStart(2,'0');
+  document.getElementById('timer').textContent = `${h}:${m}:${s}`;
+}
+
+function openStopModal() {
+  const gpsDistance = calcGpsDistance();
+  const milesEl = document.getElementById('stop-miles');
+  const gpsResult = document.getElementById('gps-result');
+
+  if (gpsDistance > 0) {
+    milesEl.value = gpsDistance.toFixed(1);
+    gpsResult.textContent = `GPS estimated ${gpsDistance.toFixed(1)} miles. Adjust if needed.`;
+  } else {
+    gpsResult.textContent = gpsSupported ? 'GPS had insufficient data — enter miles manually.' : 'Enter miles from your odometer or navigation app.';
+    milesEl.value = '';
+  }
+
+  document.getElementById('stop-notes').value = '';
+  document.getElementById('stop-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('stop-modal').classList.remove('open');
+}
+
+function calcGpsDistance() {
+  if (gpsPoints.length < 2) return 0;
+  let totalKm = 0;
+  for (let i = 1; i < gpsPoints.length; i++) {
+    totalKm += haversine(gpsPoints[i-1], gpsPoints[i]);
+  }
+  return totalKm * 0.621371; // km to miles
+}
+
+function haversine(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+async function saveTrip() {
+  const miles = parseFloat(document.getElementById('stop-miles').value);
+  if (!miles || miles <= 0) { alert('Please enter miles greater than 0.'); return; }
+
+  const endTime = new Date();
+  const dateStr = tripStartTime.toISOString().split('T')[0];
+  const notes = document.getElementById('stop-notes').value;
+
+  try {
+    const res = await fetch('/api/trips', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        date: dateStr,
+        platform: selectedPlatform,
+        miles: miles,
+        notes: notes,
+        start_time: tripStartTime.toTimeString().slice(0,8),
+        end_time: endTime.toTimeString().slice(0,8)
+      })
+    });
+    if (res.ok) {
+      stopTrip();
+      closeModal();
+      showToast(`✅ ${miles.toFixed(1)} miles saved!`);
+    }
+  } catch(e) {
+    alert('Error saving trip. Check connection.');
+  }
+}
+
+function stopTrip() {
+  tripRunning = false;
+  clearInterval(timerInterval);
+  if (gpsWatcher !== null) navigator.geolocation.clearWatch(gpsWatcher);
+  gpsWatcher = null;
+  gpsPoints = [];
+
+  document.getElementById('trip-status').classList.remove('running');
+  document.getElementById('status-label').textContent = 'Ready to track';
+  document.getElementById('timer').style.display = 'none';
+  document.getElementById('status-idle').style.display = 'block';
+  document.getElementById('status-idle').textContent = 'No trip in progress';
+  document.getElementById('timer').textContent = '00:00:00';
+  document.getElementById('main-btn').className = 'big-btn btn-start';
+  document.getElementById('main-btn').textContent = '▶ START TRIP';
+  document.getElementById('gps-badge').style.display = 'none';
+}
+
+async function loadSummary() {
+  const year = document.getElementById('year-select').value;
+  const month = document.getElementById('month-select').value;
+  let url = `/api/summary?year=${year}`;
+  if (month) url += `&month=${month}`;
+
+  const data = await fetch(url).then(r => r.json());
+  document.getElementById('sum-miles').textContent = data.total_miles.toLocaleString();
+  document.getElementById('sum-trips').textContent = `${data.trip_count} trip${data.trip_count !== 1 ? 's' : ''}`;
+  document.getElementById('sum-deduction').textContent = `$${data.deduction.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+
+  const bp = document.getElementById('by-platform');
+  if (Object.keys(data.by_platform).length === 0) {
+    bp.innerHTML = '<span style="color:var(--muted)">No trips yet</span>';
+  } else {
+    bp.innerHTML = Object.entries(data.by_platform)
+      .sort((a,b) => b[1]-a[1])
+      .map(([p,m]) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span>${p}</span><span style="font-weight:600">${m.toFixed(1)} mi</span></div>`)
+      .join('');
+  }
+}
+
+async function loadHistory() {
+  const trips = await fetch('/api/trips').then(r => r.json());
+  const container = document.getElementById('history-list');
+  if (trips.length === 0) {
+    container.innerHTML = '<div class="empty-state">No trips logged yet.<br>Start tracking to see your history.</div>';
+    return;
+  }
+  container.innerHTML = trips.map(t => `
+    <div class="trip-card">
+      <div class="trip-info">
+        <span class="trip-platform platform-${t.platform.toLowerCase()}">${t.platform}</span>
+        <div class="trip-date">${t.date}${t.start_time ? ' · ' + t.start_time + ' – ' + (t.end_time || '?') : ''}</div>
+        ${t.notes ? `<div class="trip-notes">${t.notes}</div>` : ''}
+      </div>
+      <div>
+        <div class="trip-miles">${parseFloat(t.miles).toFixed(1)} mi</div>
+        <div class="trip-deduction">$${(t.miles * 0.70).toFixed(2)}</div>
+        <button class="delete-btn" onclick="deleteTrip(${t.id})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function deleteTrip(id) {
+  if (!confirm('Delete this trip?')) return;
+  await fetch(`/api/trips/${id}`, {method:'DELETE'});
+  loadHistory();
+}
+
+function exportCSV() {
+  const year = document.getElementById('year-select').value;
+  window.location.href = `/api/export?year=${year}`;
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:12px 24px;border-radius:30px;font-weight:600;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Init summary on load
+loadSummary();
+</script>
+</body>
+</html>
