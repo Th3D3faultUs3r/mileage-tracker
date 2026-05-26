@@ -305,7 +305,7 @@ header {
     <div class="add-profile-form" id="addProfileForm" style="display:none">
       <input type="text" id="newProfileName" placeholder="Your name" maxlength="20" autocomplete="off"
              onkeydown="if(event.key==='Enter')addProfile()">
-      <button type="button" ontouchend="addProfile();event.preventDefault()" onclick="addProfile()">Add</button>
+      <button type="button" ontouchstart="event.preventDefault();addProfile()" onclick="addProfile()">Add</button>
     </div>
   </div>
 </div>
@@ -667,7 +667,7 @@ function discardTrip() {
   showToast('🗑 Trip discarded');
 }
 
-apync function saveTrip() {
+async function saveTrip() {
   const miles = parseFloat(document.getElementById('milesInput').value);
   if (!miles || miles <= 0) {
     alert('Enter how many miles you drove, or tap "Discard Trip" to cancel without saving.');
@@ -702,7 +702,7 @@ function openPastModal() {
 }
 function closePastModal() { document.getElementById('pastModal').style.display = 'none'; }
 
-apync function savePastTrip() {
+async function savePastTrip() {
   const date = document.getElementById('pastDate').value;
   const miles = parseFloat(document.getElementById('pastMiles').value);
   const notes = document.getElementById('pastNotes').value;
