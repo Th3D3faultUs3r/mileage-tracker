@@ -302,10 +302,11 @@ header {
     <p class="pp-sub">Who's driving today?</p>
     <div class="profile-list" id="profileList"></div>
     <button type="button" class="btn-add-profile" onclick="showAddProfile()">+ Add Person</button>
-    <form class="add-profile-form" id="addProfileForm" style="display:none" onsubmit="addProfile();return false;">
-      <input type="text" id="newProfileName" placeholder="Your name" maxlength="20" autocomplete="off">
-      <button type="submit">Add</button>
-    </form>
+    <div class="add-profile-form" id="addProfileForm" style="display:none">
+      <input type="text" id="newProfileName" placeholder="Your name" maxlength="20" autocomplete="off"
+             onkeydown="if(event.key==='Enter')addProfile()">
+      <button type="button" ontouchend="addProfile();event.preventDefault()" onclick="addProfile()">Add</button>
+    </div>
   </div>
 </div>
 
@@ -666,7 +667,7 @@ function discardTrip() {
   showToast('🗑 Trip discarded');
 }
 
-async function saveTrip() {
+apync function saveTrip() {
   const miles = parseFloat(document.getElementById('milesInput').value);
   if (!miles || miles <= 0) {
     alert('Enter how many miles you drove, or tap "Discard Trip" to cancel without saving.');
@@ -701,7 +702,7 @@ function openPastModal() {
 }
 function closePastModal() { document.getElementById('pastModal').style.display = 'none'; }
 
-async function savePastTrip() {
+apync function savePastTrip() {
   const date = document.getElementById('pastDate').value;
   const miles = parseFloat(document.getElementById('pastMiles').value);
   const notes = document.getElementById('pastNotes').value;
@@ -811,7 +812,7 @@ async function loadSummary() {
   const d = await res.json();
   document.getElementById('sMiles').textContent = d.total_miles;
   document.getElementById('sDed').textContent = `$${d.deduction}`;
-  document.getElementyId('sTrips').textContent = d.trip_count;
+  document.getElementById('sTrips').textContent = d.trip_count;
   document.getElementById('sExp').textContent = `$${d.total_expenses}`;
 
   const platEntries = Object.entries(d.by_platform);
