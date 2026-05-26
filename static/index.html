@@ -301,12 +301,11 @@ header {
     <h1>Mileage Tracker</h1>
     <p class="pp-sub">Who's driving today?</p>
     <div class="profile-list" id="profileList"></div>
-    <button class="btn-add-profile" onclick="showAddProfile()">+ Add Person</button>
-    <div class="add-profile-form" id="addProfileForm" style="display:none">
-      <input type="text" id="newProfileName" placeholder="Your name" maxlength="20"
-             onkeydown="if(event.key==='Enter')addProfile()">
-      <button onclick="addProfile()">Add</button>
-    </div>
+    <button type="button" class="btn-add-profile" onclick="showAddProfile()">+ Add Person</button>
+    <form class="add-profile-form" id="addProfileForm" style="display:none" onsubmit="addProfile();return false;">
+      <input type="text" id="newProfileName" placeholder="Your name" maxlength="20" autocomplete="off">
+      <button type="submit">Add</button>
+    </form>
   </div>
 </div>
 
@@ -503,7 +502,7 @@ let currentCat = null;
 function getProfiles() {
   try { return JSON.parse(localStorage.getItem('milesProfiles') || '[]'); } catch { return []; }
 }
-function saveProfiles(p) { localStorage.setItem('milesProfiles', JSOF.stringify(p)); }
+function saveProfiles(p) { localStorage.setItem('milesProfiles', JSON.stringify(p)); }
 
 function renderProfileList() {
   let profiles = getProfiles();
@@ -812,7 +811,7 @@ async function loadSummary() {
   const d = await res.json();
   document.getElementById('sMiles').textContent = d.total_miles;
   document.getElementById('sDed').textContent = `$${d.deduction}`;
-  document.getElementById('sTrips').textContent = d.trip_count;
+  document.getElementyId('sTrips').textContent = d.trip_count;
   document.getElementById('sExp').textContent = `$${d.total_expenses}`;
 
   const platEntries = Object.entries(d.by_platform);
