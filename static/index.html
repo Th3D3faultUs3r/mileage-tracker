@@ -2,613 +2,942 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mileage Tracker</title>
 <meta name="theme-color" content="#1a1a2e">
-<title>Mile Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0f0f1a;
-    --card: #1a1a2e;
-    --accent: #4f8ef7;
-    --green: #22c55e;
-    --red: #ef4444;
-    --orange: #f97316;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --border: #2d3748;
-  }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    padding-bottom: 80px;
-  }
-  header {
-    background: var(--card);
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  header h1 { font-size: 1.2rem; font-weight: 700; }
-  header span { font-size: 0.8rem; color: var(--muted); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green: #1a7a4a;
+  --green-light: #25a870;
+  --dark: #1a1a2e;
+  --red: #e74c3c;
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --sub: #666;
+  --border: #e8edf2;
+}
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: 72px;
+  min-height: 100vh;
+}
 
-  nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--card);
-    border-top: 1px solid var(--border);
-    display: flex;
-    z-index: 10;
-  }
-  nav button {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--muted);
-    padding: 12px 4px;
-    font-size: 0.65rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    transition: color 0.2s;
-  }
-  nav button.active { color: var(--accent); }
-  nav button svg { width: 22px; height: 22px; }
+/* Profile Picker */
+#profilePicker {
+  position: fixed; inset: 0;
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 32px 24px;
+}
+.pp-inner { width: 100%; max-width: 340px; text-align: center; }
+.pp-logo { font-size: 64px; margin-bottom: 14px; }
+.pp-inner h1 { color: white; font-size: 30px; font-weight: 800; margin-bottom: 6px; }
+.pp-sub { color: #aab8c2; font-size: 16px; margin-bottom: 32px; }
+.profile-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.profile-btn {
+  background: rgba(255,255,255,0.1); color: white;
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 14px;
+  padding: 18px 20px; font-size: 18px; font-weight: 700; cursor: pointer;
+  text-align: left; display: flex; align-items: center; gap: 12px;
+  transition: background 0.2s;
+}
+.profile-btn:hover { background: rgba(255,255,255,0.2); }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--green); display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800; flex-shrink: 0;
+}
+.btn-add-profile {
+  background: none; border: none; color: #4ecdc4;
+  font-size: 15px; cursor: pointer; padding: 10px; width: 100%;
+}
+.add-profile-form { margin-top: 10px; display: flex; gap: 8px; }
+.add-profile-form input {
+  flex: 1; padding: 12px 14px; border-radius: 10px;
+  border: none; font-size: 16px; outline: none;
+}
+.add-profile-form button {
+  background: var(--green); color: white; border: none;
+  border-radius: 10px; padding: 12px 18px; font-size: 15px; font-weight: 700; cursor: pointer;
+}
 
-  .page { display: none; padding: 20px; }
-  .page.active { display: block; }
+/* Header */
+header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white; padding: 14px 20px;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.header-inner { display: flex; align-items: center; justify-content: space-between; }
+.app-title { font-size: 19px; font-weight: 800; }
+.user-badge {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  border-radius: 20px; padding: 7px 14px; font-size: 14px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.user-badge:hover { background: rgba(255,255,255,0.25); }
 
-  /* TRIP PAGE */
-  .trip-status {
-    background: var(--card);
-    border-radius: 16px;
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 20px;
-    border: 2px solid var(--border);
-    transition: border-color 0.3s;
-  }
-  .trip-status.running { border-color: var(--green); }
-  .status-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  .status-timer { font-size: 2.5rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); display: none; }
-  .status-idle { font-size: 1.1rem; color: var(--muted); }
+/* Tab Bar */
+.tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: white; display: flex; border-top: 1px solid var(--border);
+  z-index: 50; box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+}
+.tab-btn {
+  flex: 1; background: none; border: none; padding: 10px 4px 8px;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 11px; color: #aaa; font-weight: 600;
+}
+.tab-btn .tb-icon { font-size: 21px; line-height: 1; }
+.tab-btn.active { color: var(--green); }
 
-  .big-btn {
-    width: 100%;
-    padding: 20px;
-    border-radius: 14px;
-    border: none;
-    font-size: 1.2rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.5px;
-  }
-  .btn-start { background: var(--green); color: #fff; }
-  .btn-stop { background: var(--red); color: #fff; }
-  .big-btn:active { transform: scale(0.97); }
+/* Shared */
+.card {
+  background: var(--card); border-radius: 18px; padding: 20px;
+  margin: 12px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.section-lbl {
+  font-size: 12px; font-weight: 800; color: #999;
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.btn-primary {
+  width: 100%; padding: 17px; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, var(--green), var(--green-light));
+  color: white; font-size: 17px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(26,122,74,0.3);
+}
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary.red { background: linear-gradient(135deg, #c0392b, var(--red)); box-shadow: 0 4px 14px rgba(231,76,60,0.3); }
+.btn-secondary {
+  width: 100%; padding: 13px; border-radius: 12px;
+  border: 2px solid var(--green); background: none;
+  color: var(--green); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px;
+}
+.input-lbl { font-size: 13px; font-weight: 700; color: var(--sub); margin-bottom: 6px; display: block; }
+.input-field {
+  width: 100%; padding: 12px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); font-size: 16px; outline: none;
+  background: var(--bg); color: var(--text);
+}
+.input-field:focus { border-color: var(--green); background: white; }
+.empty-state { text-align: center; padding: 60px 24px; color: var(--sub); }
+.empty-state .es-icon { font-size: 52px; margin-bottom: 14px; }
 
-  .platform-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .platform-btn {
-    padding: 12px 6px;
-    border-radius: 10px;
-    border: 2px solid var(--border);
-    background: var(--card);
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s;
-  }
-  .platform-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.1); }
+/* Track Tab */
+.platform-row { display: flex; gap: 8px; margin-bottom: 18px; }
+.platform-btn {
+  flex: 1; padding: 12px 6px; border-radius: 12px; border: 2px solid var(--border);
+  background: white; font-size: 13px; font-weight: 700; cursor: pointer;
+  text-align: center; line-height: 1.5;
+}
+.platform-btn.sel { border-color: var(--green); background: #e8f5ee; color: var(--green); }
+.platform-btn:disabled { opacity: 0.5; }
+.timer-wrap { text-align: center; padding: 12px 0 18px; }
+.timer-lbl { font-size: 13px; color: var(--sub); margin-bottom: 4px; }
+.timer-val { font-size: 44px; font-weight: 800; color: var(--dark); font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+.gps-pill {
+  display: inline-block; font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px; margin-top: 10px;
+}
+.gps-pill.active { background: #e8f5ee; color: var(--green); }
+.gps-pill.warn { background: #fff3cd; color: #856404; }
+.gps-pill.off { background: var(--bg); color: var(--sub); }
 
-  label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 6px; margin-top: 16px; }
-  input, textarea, select {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 1rem;
-    outline: none;
-  }
-  input:focus, textarea:focus { border-color: var(--accent); }
+/* Summary Tab */
+.filter-row { display: flex; gap: 10px; margin-bottom: 18px; }
+.filter-row select {
+  flex: 1; padding: 11px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 15px; color: var(--text); outline: none;
+}
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-box { background: var(--bg); border-radius: 14px; padding: 16px; text-align: center; }
+.stat-box.hi { background: #e8f5ee; }
+.stat-val { font-size: 26px; font-weight: 800; color: var(--dark); }
+.stat-box.hi .stat-val { color: var(--green); }
+.stat-lbl { font-size: 12px; color: var(--sub); margin-top: 2px; font-weight: 600; }
+.breakdown-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+}
+.breakdown-row:last-child { border-bottom: none; }
+.btn-export {
+  width: 100%; padding: 15px; background: var(--dark); color: white;
+  border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 18px;
+}
 
-  .manual-section { display: none; margin-top: 16px; }
-  .manual-section.visible { display: block; }
+/* History Tab */
+.trip-card {
+  background: var(--card); border-radius: 16px; padding: 16px 18px;
+  margin: 8px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.tc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.tc-date { font-size: 12px; color: var(--sub); font-weight: 600; }
+.tc-platform { font-size: 17px; font-weight: 800; margin-top: 2px; }
+.tc-right { text-align: right; }
+.tc-miles { font-size: 22px; font-weight: 800; }
+.tc-ded { font-size: 13px; color: var(--green); font-weight: 700; }
+.tc-notes { font-size: 13px; color: var(--sub); margin-top: 7px; }
+.tc-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.btn-route {
+  background: none; border: 1.5px solid var(--green); color: var(--green);
+  border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.btn-del { background: none; border: none; color: #ccc; font-size: 20px; cursor: pointer; padding: 4px; }
+.btn-del:hover { color: var(--red); }
 
-  .gps-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
-    color: var(--green);
-    background: rgba(34,197,94,0.1);
-    padding: 4px 10px;
-    border-radius: 20px;
-    margin-bottom: 12px;
-  }
-  .gps-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+/* Expenses Tab */
+.cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.cat-btn {
+  padding: 10px 4px; border-radius: 10px; border: 2px solid var(--border);
+  background: white; font-size: 12px; font-weight: 700; cursor: pointer;
+  text-align: center; line-height: 1.5;
+}
+.cat-btn.sel { border-color: var(--green); background: #e8f5ee; color: var(--green); }
+.exp-card {
+  background: var(--card); border-radius: 14px; padding: 14px 18px;
+  margin: 8px 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.exp-cat { font-weight: 800; font-size: 15px; }
+.exp-meta { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.exp-amt { font-size: 20px; font-weight: 800; text-align: right; }
+.exp-del { display: block; background: none; border: none; color: #ccc; font-size: 17px; cursor: pointer; margin-top: 4px; text-align: right; }
+.exp-del:hover { color: var(--red); }
 
-  /* SUMMARY PAGE */
-  .summary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .stat-card {
-    background: var(--card);
-    border-radius: 14px;
-    padding: 18px 14px;
-    border: 1px solid var(--border);
-  }
-  .stat-card.full { grid-column: 1 / -1; }
-  .stat-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
-  .stat-value { font-size: 1.6rem; font-weight: 700; }
-  .stat-value.green { color: var(--green); }
-  .stat-value.accent { color: var(--accent); }
-  .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 100;
+}
+.modal-box {
+  background: white; border-radius: 24px 24px 0 0;
+  padding: 24px 20px 44px; width: 100%; max-height: 92vh; overflow-y: auto;
+}
+.modal-title { font-size: 21px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+.modal-sub { text-align: center; color: var(--sub); font-size: 14px; margin-bottom: 18px; }
+.big-input {
+  width: 100%; padding: 16px; border-radius: 14px; border: 2px solid var(--border);
+  font-size: 34px; font-weight: 800; text-align: center; outline: none; margin-bottom: 14px;
+}
+.big-input:focus { border-color: var(--green); }
+.note-input {
+  width: 100%; padding: 12px 14px; border-radius: 10px;
+  border: 1.5px solid var(--border); font-size: 15px; outline: none;
+  background: var(--bg); margin-bottom: 16px; resize: none;
+}
+.note-input:focus { border-color: var(--green); background: white; }
+.modal-actions { display: flex; gap: 12px; margin-bottom: 10px; }
+.btn-keep {
+  flex: 1; padding: 15px; background: var(--bg); border: none;
+  border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; color: var(--text);
+}
+.btn-save {
+  flex: 2; padding: 15px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, var(--green), var(--green-light));
+  color: white; font-size: 16px; font-weight: 800; cursor: pointer;
+}
+.btn-discard {
+  background: none; border: none; color: var(--red); font-size: 14px;
+  cursor: pointer; padding: 10px 0 0; width: 100%; text-align: center; text-decoration: underline;
+}
 
-  .month-select {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  .month-select select {
-    flex: 1;
-  }
-  .export-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 16px;
-  }
-  .export-btn:active { opacity: 0.85; }
+/* Map Modal */
+.map-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+}
+.map-box {
+  background: white; border-radius: 20px; width: 100%;
+  max-width: 500px; overflow: hidden; max-height: 90vh;
+  display: flex; flex-direction: column;
+}
+.map-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.map-header h3 { font-size: 17px; font-weight: 800; }
+.map-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--sub); }
+#mapEl { height: 280px; width: 100%; flex-shrink: 0; }
+.map-info { padding: 14px 20px; overflow-y: auto; }
+.map-info-row {
+  display: flex; justify-content: space-between; padding: 7px 0;
+  border-bottom: 1px solid var(--border); font-size: 14px;
+}
+.map-info-row:last-child { border-bottom: none; }
+.map-info-row .ml { color: var(--sub); }
+.map-info-row .mr { font-weight: 700; }
 
-  /* HISTORY PAGE */
-  .trip-card {
-    background: var(--card);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    border: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .trip-info { flex: 1; }
-  .trip-date { font-size: 0.8rem; color: var(--muted); }
-  .trip-platform {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 6px;
-    display: inline-block;
-    margin-bottom: 4px;
-  }
-  .platform-instacart { background: rgba(79,142,247,0.2); color: #7eb3ff; }
-  .platform-doordash { background: rgba(239,68,68,0.2); color: #fca5a5; }
-  .platform-other { background: rgba(148,163,184,0.2); color: #94a3b8; }
-  .trip-miles { font-size: 1.3rem; font-weight: 700; text-align: right; }
-  .trip-deduction { font-size: 0.75rem; color: var(--green); text-align: right; }
-  .trip-notes { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
-  .delete-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    padding: 8px;
-    cursor: pointer;
-    font-size: 1.1rem;
-  }
-  .empty-state {
-    text-align: center;
-    color: var(--muted);
-    padding: 40px 20px;
-    font-size: 0.95rem;
-  }
-
-  /* MODAL */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 100;
-    align-items: flex-end;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--card);
-    border-radius: 20px 20px 0 0;
-    padding: 24px 20px 36px;
-    width: 100%;
-    border-top: 1px solid var(--border);
-  }
-  .modal h3 { font-size: 1.1rem; margin-bottom: 16px; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-  .modal-actions button { flex: 1; padding: 14px; border-radius: 10px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; }
-  .btn-cancel { background: var(--border); color: var(--text); }
-  .btn-confirm { background: var(--green); color: #fff; }
-  .btn-discard-link { background: none; border: none; color: var(--red); font-size: 0.9rem; cursor: pointer; padding: 10px 0 0; width: 100%; text-align: center; text-decoration: underline; }
+/* Toast */
+#toast {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: var(--dark); color: white; padding: 12px 26px;
+  border-radius: 24px; font-size: 14px; font-weight: 700;
+  z-index: 500; opacity: 0; transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🚗 Mile Tracker</h1>
-  <span id="year-label"></span>
-</header>
+<div id="toast"></div>
 
-<!-- PAGES -->
-<div id="page-trip" class="page active">
-  <div class="trip-status" id="trip-status">
-    <div class="status-label" id="status-label">Ready to track</div>
-    <div class="status-timer" id="timer">00:00:00</div>
-    <div class="status-idle" id="status-idle">No trip in progress</div>
-  </div>
-
-  <div class="platform-row">
-    <button class="platform-btn selected" data-platform="Instacart" onclick="selectPlatform(this)">🛒 Instacart</button>
-    <button class="platform-btn" data-platform="DoorDash" onclick="selectPlatform(this)">🍕 DoorDash</button>
-    <button class="platform-btn" data-platform="Other" onclick="selectPlatform(this)">📦 Other</button>
-  </div>
-
-  <div id="gps-badge" class="gps-badge" style="display:none">
-    <div class="gps-dot"></div> GPS Tracking Active
-  </div>
-
-  <button id="main-btn" class="big-btn btn-start" onclick="toggleTrip()">▶ START TRIP</button>
-
-  <div class="manual-section" id="manual-section">
-    <label>Miles Driven (enter manually)</label>
-    <input type="number" id="manual-miles" placeholder="0.0" step="0.1" min="0">
-    <label>Notes (optional)</label>
-    <input type="text" id="trip-notes" placeholder="e.g. Downtown zone, busy night">
+<!-- Profile Picker -->
+<div id="profilePicker">
+  <div class="pp-inner">
+    <div class="pp-logo">🚗</div>
+    <h1>Mileage Tracker</h1>
+    <p class="pp-sub">Who's driving today?</p>
+    <div class="profile-list" id="profileList"></div>
+    <button class="btn-add-profile" onclick="showAddProfile()">+ Add Person</button>
+    <div class="add-profile-form" id="addProfileForm" style="display:none">
+      <input type="text" id="newProfileName" placeholder="Your name" maxlength="20"
+             onkeydown="if(event.key==='Enter')addProfile()">
+      <button onclick="addProfile()">Add</button>
+    </div>
   </div>
 </div>
 
-<div id="page-summary" class="page">
-  <div class="month-select">
-    <select id="year-select" onchange="loadSummary()"></select>
-    <select id="month-select" onchange="loadSummary()">
-      <option value="">Full Year</option>
-      <option value="1">January</option>
-      <option value="2">February</option>
-      <option value="3">March</option>
-      <option value="4">April</option>
-      <option value="5">May</option>
-      <option value="6">June</option>
-      <option value="7">July</option>
-      <option value="8">August</option>
-      <option value="9">September</option>
-      <option value="10">October</option>
-      <option value="11">November</option>
-      <option value="12">December</option>
-    </select>
+<!-- Main App -->
+<div id="mainApp" style="display:none">
+
+  <header>
+    <div class="header-inner">
+      <span class="app-title">🚗 Mileage Tracker</span>
+      <button class="user-badge" onclick="switchUser()">
+        <span id="headerUser"></span>
+        <span>⇄</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Track Tab -->
+  <div class="tab-content" id="tab-track">
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:10px">Select Platform</div>
+      <div class="platform-row" id="platformRow">
+        <button class="platform-btn" onclick="selectPlatform('Instacart',this)">🛒<br>Instacart</button>
+        <button class="platform-btn" onclick="selectPlatform('DoorDash',this)">🚪<br>DoorDash</button>
+        <button class="platform-btn" onclick="selectPlatform('Other',this)">📦<br>Other</button>
+      </div>
+      <div id="timerWrap" style="display:none">
+        <div class="timer-wrap">
+          <div class="timer-lbl">Trip in progress</div>
+          <div class="timer-val" id="timerVal">0:00:00</div>
+          <div class="gps-pill active" id="gpsStatus">📍 GPS active</div>
+        </div>
+      </div>
+      <button class="btn-primary" id="trackBtn" onclick="handleTrackBtn()" disabled>Start Trip</button>
+      <div style="text-align:center;margin-top:8px">
+        <span class="gps-pill off" id="gpsReady"></span>
+      </div>
+    </div>
+    <div style="padding:0 16px">
+      <button class="btn-secondary" onclick="openPastModal()">Log Past Trip</button>
+    </div>
   </div>
 
-  <div class="summary-grid">
-    <div class="stat-card">
-      <div class="stat-label">Total Miles</div>
-      <div class="stat-value accent" id="sum-miles">—</div>
-      <div class="stat-sub" id="sum-trips">— trips</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Tax Deduction</div>
-      <div class="stat-value green" id="sum-deduction">—</div>
-      <div class="stat-sub">@ $0.70/mile (2025)</div>
-    </div>
-    <div class="stat-card full" id="by-platform-card">
-      <div class="stat-label">By Platform</div>
-      <div id="by-platform">—</div>
+  <!-- Summary Tab -->
+  <div class="tab-content" id="tab-summary" style="display:none">
+    <div class="card">
+      <div class="filter-row">
+        <select id="summaryYear" onchange="loadSummary()"></select>
+        <select id="summaryMonth" onchange="loadSummary()">
+          <option value="">All Months</option>
+          <option value="01">January</option><option value="02">February</option>
+          <option value="03">March</option><option value="04">April</option>
+          <option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option>
+          <option value="09">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-val" id="sMiles">—</div><div class="stat-lbl">Total Miles</div></div>
+        <div class="stat-box hi"><div class="stat-val" id="sDed">—</div><div class="stat-lbl">Mileage Deduction</div></div>
+        <div class="stat-box"><div class="stat-val" id="sTrips">—</div><div class="stat-lbl">Trips</div></div>
+        <div class="stat-box"><div class="stat-val" id="sExp">—</div><div class="stat-lbl">Expenses</div></div>
+      </div>
+      <div id="platformBreakdown"></div>
+      <div id="categoryBreakdown"></div>
+      <button class="btn-export" onclick="exportCSV()">⬇ Export CSV for Taxes</button>
     </div>
   </div>
 
-  <button class="export-btn" onclick="exportCSV()">⬇ Download CSV for Taxes</button>
+  <!-- History Tab -->
+  <div class="tab-content" id="tab-history" style="display:none">
+    <div id="historyList"></div>
+  </div>
+
+  <!-- Expenses Tab -->
+  <div class="tab-content" id="tab-expenses" style="display:none">
+    <div class="card">
+      <div class="section-lbl" style="margin-bottom:10px">Category</div>
+      <div class="cat-grid">
+        <button class="cat-btn" onclick="selectCat('⛽ Gas',this)">⛽<br>Gas</button>
+        <button class="cat-btn" onclick="selectCat('🅿️ Parking',this)">🅿️<br>Parking</button>
+        <button class="cat-btn" onclick="selectCat('🛣️ Tolls',this)">🛣️<br>Tolls</button>
+        <button class="cat-btn" onclick="selectCat('📱 Phone',this)">📱<br>Phone</button>
+        <button class="cat-btn" onclick="selectCat('🔧 Maintenance',this)">🔧<br>Maint.</button>
+        <button class="cat-btn" onclick="selectCat('📦 Other',this)">📦<br>Other</button>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="input-lbl">Amount ($)</label>
+        <input class="input-field" type="number" id="expAmount" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="input-lbl">Date</label>
+        <input class="input-field" type="date" id="expDate">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="input-lbl">Notes (optional)</label>
+        <input class="input-field" type="text" id="expNotes" placeholder="e.g. BP on Main St">
+      </div>
+      <button class="btn-primary" onclick="saveExpense()">Save Expense</button>
+    </div>
+    <div class="section-lbl" style="margin:16px 16px 8px">Recent Expenses</div>
+    <div id="expenseList"></div>
+  </div>
+
+  <!-- Tab Bar -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" id="tbn-track" onclick="switchTab('track')">
+      <span class="tb-icon">🗺️</span><span>Track</span>
+    </button>
+    <button class="tab-btn" id="tbn-summary" onclick="switchTab('summary')">
+      <span class="tb-icon">📊</span><span>Summary</span>
+    </button>
+    <button class="tab-btn" id="tbn-history" onclick="switchTab('history')">
+      <span class="tb-icon">📋</span><span>History</span>
+    </button>
+    <button class="tab-btn" id="tbn-expenses" onclick="switchTab('expenses')">
+      <span class="tb-icon">💳</span><span>Expenses</span>
+    </button>
+  </nav>
 </div>
 
-<div id="page-history" class="page">
-  <div id="history-list"></div>
-</div>
-
-<!-- Stop Trip Modal -->
-<div class="modal-overlay" id="stop-modal">
-  <div class="modal">
-    <h3>End Trip</h3>
-    <div id="gps-result" style="margin-bottom:12px;color:var(--muted);font-size:0.85rem;"></div>
-    <label>Miles This Trip</label>
-    <input type="number" id="stop-miles" placeholder="0.0" step="0.1" min="0">
-    <label>Notes (optional)</label>
-    <input type="text" id="stop-notes" placeholder="e.g. evening shift, downtown">
+<!-- End Trip Modal -->
+<div class="modal-overlay" id="tripModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">End Trip</div>
+    <div class="modal-sub">Confirm or adjust your miles</div>
+    <input class="big-input" type="number" id="milesInput" placeholder="0.0" step="0.1" min="0">
+    <textarea class="note-input" id="notesInput" rows="2" placeholder="Notes (optional)"></textarea>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Keep Running</button>
-      <button class="btn-confirm" onclick="saveTrip()">Save Trip</button>
+      <button class="btn-keep" onclick="closeModal()">Keep Running</button>
+      <button class="btn-save" onclick="saveTrip()">Save Trip</button>
     </div>
-    <button class="btn-discard-link" onclick="discardTrip()">Discard Trip (don't save)</button>
+    <button class="btn-discard" onclick="discardTrip()">Discard Trip (don't save)</button>
   </div>
 </div>
 
-<!-- Nav -->
-<nav>
-  <button class="active" onclick="showPage('trip', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    Track
-  </button>
-  <button onclick="showPage('summary', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-    Summary
-  </button>
-  <button onclick="showPage('history', this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v10l4 4"/><circle cx="12" cy="12" r="10"/></svg>
-    History
-  </button>
-</nav>
+<!-- Log Past Trip Modal -->
+<div class="modal-overlay" id="pastModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">Log Past Trip</div>
+    <div style="margin-bottom:14px">
+      <label class="input-lbl">Platform</label>
+      <div class="platform-row" id="pastPlatformRow">
+        <button class="platform-btn" onclick="selectPastPlatform('Instacart',this)">🛒<br>Instacart</button>
+        <button class="platform-btn" onclick="selectPastPlatform('DoorDash',this)">🚪<br>DoorDash</button>
+        <button class="platform-btn" onclick="selectPastPlatform('Other',this)">📦<br>Other</button>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="input-lbl">Miles</label>
+      <input class="big-input" type="number" id="pastMiles" placeholder="0.0" step="0.1" min="0" style="font-size:26px;margin-bottom:0">
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="input-lbl">Date</label>
+      <input class="input-field" type="date" id="pastDate">
+    </div>
+    <div style="margin-bottom:18px">
+      <label class="input-lbl">Notes (optional)</label>
+      <input class="input-field" type="text" id="pastNotes" placeholder="Add a note">
+    </div>
+    <button class="btn-save" style="width:100%;padding:16px;border-radius:14px;font-size:17px" onclick="savePastTrip()">Save Trip</button>
+    <button class="btn-discard" onclick="closePastModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- Map Modal -->
+<div class="map-overlay" id="mapModal" style="display:none">
+  <div class="map-box">
+    <div class="map-header">
+      <h3 id="mapTitle">Trip Route</h3>
+      <button class="map-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div id="mapEl"></div>
+    <div class="map-info" id="mapInfo"></div>
+  </div>
+</div>
 
 <script>
-let tripRunning = false;
+// State
+let currentUser = null;
+let currentPlatform = null;
+let pastPlatform = null;
+let isTracking = false;
 let tripStartTime = null;
 let timerInterval = null;
-let selectedPlatform = 'Instacart';
-let gpsWatcher = null;
-let gpsPoints = [];
-let gpsSupported = 'geolocation' in navigator;
+let watchId = null;
+let routePoints = [];
+let lastWaypointTime = 0;
+let leafletMap = null;
+let tripsCache = [];
+let currentCat = null;
+
+// Profiles
+function getProfiles() {
+  try { return JSON.parse(localStorage.getItem('milesProfiles') || '[]'); } catch { return []; }
+}
+function saveProfiles(p) { localStorage.setItem('milesProfiles', JSOF.stringify(p)); }
+
+function renderProfileList() {
+  let profiles = getProfiles();
+  if (!profiles.length) { profiles = ['Zane', 'Amber']; saveProfiles(profiles); }
+  document.getElementById('profileList').innerHTML = profiles.map(name =>
+    `<button class="profile-btn" onclick="selectProfile('${name}')">
+       <div class="avatar">${name[0].toUpperCase()}</div>${name}
+     </button>`
+  ).join('');
+}
+
+function selectProfile(name) {
+  localStorage.setItem('milesUser', name);
+  currentUser = name;
+  document.getElementById('profilePicker').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('headerUser').textContent = name;
+  initApp();
+}
+
+function showAddProfile() {
+  document.getElementById('addProfileForm').style.display = 'flex';
+  setTimeout(() => document.getElementById('newProfileName').focus(), 50);
+}
+
+function addProfile() {
+  const name = document.getElementById('newProfileName').value.trim();
+  if (!name) return;
+  const profiles = getProfiles();
+  if (!profiles.includes(name)) { profiles.push(name); saveProfiles(profiles); }
+  document.getElementById('newProfileName').value = '';
+  selectProfile(name);
+}
+
+function switchUser() {
+  if (isTracking) discardTrip();
+  currentUser = null;
+  localStorage.removeItem('milesUser');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('profilePicker').style.display = 'flex';
+  document.getElementById('addProfileForm').style.display = 'none';
+  renderProfileList();
+}
 
 // Init
-const now = new Date();
-document.getElementById('year-label').textContent = now.getFullYear();
-const yearSelect = document.getElementById('year-select');
-for (let y = now.getFullYear(); y >= 2024; y--) {
-  const opt = document.createElement('option');
-  opt.value = y; opt.textContent = y;
-  yearSelect.appendChild(opt);
-}
-document.getElementById('month-select').value = '';
-
-function showPage(name, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  btn.classList.add('active');
-  if (name === 'summary') loadSummary();
-  if (name === 'history') loadHistory();
-}
-
-function selectPlatform(el) {
-  document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedPlatform = el.dataset.platform;
-}
-
-function toggleTrip() {
-  if (!tripRunning) {
-    startTrip();
-  } else {
-    openStopModal();
+function initApp() {
+  const yearSel = document.getElementById('summaryYear');
+  const yr = new Date().getFullYear();
+  yearSel.innerHTML = '';
+  for (let y = yr; y >= yr - 4; y--) {
+    const o = document.createElement('option'); o.value = y; o.textContent = y;
+    yearSel.appendChild(o);
   }
+  document.getElementById('expDate').value = today();
+  setupGPS();
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+
+// GPS
+function setupGPS() {
+  const pill = document.getElementById('gpsReady');
+  if (!navigator.geolocation) {
+    pill.className = 'gps-pill warn'; pill.textContent = 'GPS unavailable';
+    document.getElementById('trackBtn').disabled = false;
+    return;
+  }
+  pill.className = 'gps-pill off'; pill.textContent = 'Checking GPS…';
+  navigator.geolocation.getCurrentPosition(
+    () => { pill.className = 'gps-pill active'; pill.textContent = '📍 GPS ready'; },
+    () => { pill.className = 'gps-pill warn'; pill.textContent = '⚠️ GPS limited'; },
+    { timeout: 6000 }
+  );
+}
+
+// Tabs
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).style.display = 'block';
+  document.getElementById('tbn-' + tab).classList.add('active');
+  if (tab === 'summary') loadSummary();
+  if (tab === 'history') loadHistory();
+  if (tab === 'expenses') loadExpenses();
+}
+
+// Platform
+function selectPlatform(name, btn) {
+  if (isTracking) return;
+  currentPlatform = name;
+  document.querySelectorAll('#platformRow .platform-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('trackBtn').disabled = false;
+}
+function selectPastPlatform(name, btn) {
+  pastPlatform = name;
+  document.querySelectorAll('#pastPlatformRow .platform-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+// Tracking
+function handleTrackBtn() {
+  if (!isTracking) startTrip(); else openEndModal();
 }
 
 function startTrip() {
-  tripRunning = true;
+  if (!currentPlatform) return;
+  isTracking = true;
   tripStartTime = new Date();
-  gpsPoints = [];
-
-  document.getElementById('trip-status').classList.add('running');
-  document.getElementById('status-label').textContent = 'Trip in Progress';
-  document.getElementById('status-idle').style.display = 'none';
-  document.getElementById('timer').style.display = 'block';
-  document.getElementById('main-btn').className = 'big-btn btn-stop';
-  document.getElementById('main-btn').textContent = '⬛ END TRIP';
-  document.getElementById('manual-section').classList.remove('visible');
-
-  timerInterval = setInterval(updateTimer, 1000);
-
-  // Start GPS if available
-  if (gpsSupported) {
-    document.getElementById('gps-badge').style.display = 'inline-flex';
-    gpsWatcher = navigator.geolocation.watchPosition(
-      pos => { gpsPoints.push({lat: pos.coords.latitude, lng: pos.coords.longitude}); },
-      err => { console.log('GPS error:', err.message); },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
-    );
-  } else {
-    document.getElementById('manual-section').classList.add('visible');
-  }
-}
-
-function updateTimer() {
-  const elapsed = Math.floor((Date.now() - tripStartTime) / 1000);
-  const h = String(Math.floor(elapsed / 3600)).padStart(2,'0');
-  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2,'0');
-  const s = String(elapsed % 60).padStart(2,'0');
-  document.getElementById('timer').textContent = `${h}:${m}:${s}`;
-}
-
-function openStopModal() {
-  const gpsDistance = calcGpsDistance();
-  const milesEl = document.getElementById('stop-miles');
-  const gpsResult = document.getElementById('gps-result');
-
-  if (gpsDistance > 0) {
-    milesEl.value = gpsDistance.toFixed(1);
-    gpsResult.textContent = `GPS estimated ${gpsDistance.toFixed(1)} miles. Adjust if needed.`;
-  } else {
-    gpsResult.textContent = gpsSupported ? 'GPS had insufficient data — enter miles manually.' : 'Enter miles from your odometer or navigation app.';
-    milesEl.value = '';
-  }
-
-  document.getElementById('stop-notes').value = '';
-  document.getElementById('stop-modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('stop-modal').classList.remove('open');
-}
-
-function discardTrip() {
-  stopTrip();
-  closeModal();
-  showToast('🗑 Trip discarded');
-}
-
-function calcGpsDistance() {
-  if (gpsPoints.length < 2) return 0;
-  let totalKm = 0;
-  for (let i = 1; i < gpsPoints.length; i++) {
-    totalKm += haversine(gpsPoints[i-1], gpsPoints[i]);
-  }
-  return totalKm * 0.621371; // km to miles
-}
-
-function haversine(a, b) {
-  const R = 6371;
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLng = (b.lng - a.lng) * Math.PI / 180;
-  const x = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-}
-
-async function saveTrip() {
-  const miles = parseFloat(document.getElementById('stop-miles').value);
-  if (!miles || miles <= 0) { alert('Enter how many miles you drove, or tap "Discard Trip" to cancel without saving.'); return; }
-
-  const endTime = new Date();
-  const dateStr = tripStartTime.toISOString().split('T')[0];
-  const notes = document.getElementById('stop-notes').value;
-
-  try {
-    const res = await fetch('/api/trips', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        date: dateStr,
-        platform: selectedPlatform,
-        miles: miles,
-        notes: notes,
-        start_time: tripStartTime.toTimeString().slice(0,8),
-        end_time: endTime.toTimeString().slice(0,8)
-      })
-    });
-    if (res.ok) {
-      stopTrip();
-      closeModal();
-      showToast(`✅ ${miles.toFixed(1)} miles saved!`);
-    }
-  } catch(e) {
-    alert('Error saving trip. Check connection.');
+  routePoints = [];
+  lastWaypointTime = 0;
+  const btn = document.getElementById('trackBtn');
+  btn.textContent = 'End Trip'; btn.classList.add('red');
+  document.getElementById('timerWrap').style.display = 'block';
+  document.querySelectorAll('#platformRow .platform-btn').forEach(b => b.disabled = true);
+  timerInterval = setInterval(() => {
+    const s = Math.floor((Date.now() - tripStartTime) / 1000);
+    document.getElementById('timerVal').textContent =
+      `${Math.floor(s/3600)}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }, 1000);
+  if (navigator.geolocation) {
+    watchId = navigator.geolocation.watchPosition(pos => {
+      const now = Date.now();
+      if (now - lastWaypointTime >= 10000) {
+        routePoints.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, ts: now });
+        lastWaypointTime = now;
+        const el = document.getElementById('gpsStatus');
+        el.textContent = `📍 GPS active — ${routePoints.length} point${routePoints.length !== 1 ? 's' : ''} recorded`;
+      }
+    }, () => {
+      const el = document.getElementById('gpsStatus');
+      el.textContent = '⚠️ GPS signal lost';
+      el.className = 'gps-pill warn';
+    }, { enableHighAccuracy: true, maximumAge: 5000 });
   }
 }
 
 function stopTrip() {
-  tripRunning = false;
+  isTracking = false;
   clearInterval(timerInterval);
-  if (gpsWatcher !== null) navigator.geolocation.clearWatch(gpsWatcher);
-  gpsWatcher = null;
-  gpsPoints = [];
-
-  document.getElementById('trip-status').classList.remove('running');
-  document.getElementById('status-label').textContent = 'Ready to track';
-  document.getElementById('timer').style.display = 'none';
-  document.getElementById('status-idle').style.display = 'block';
-  document.getElementById('status-idle').textContent = 'No trip in progress';
-  document.getElementById('timer').textContent = '00:00:00';
-  document.getElementById('main-btn').className = 'big-btn btn-start';
-  document.getElementById('main-btn').textContent = '▶ START TRIP';
-  document.getElementById('gps-badge').style.display = 'none';
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  const btn = document.getElementById('trackBtn');
+  btn.textContent = 'Start Trip'; btn.classList.remove('red');
+  document.getElementById('timerWrap').style.display = 'none';
+  document.getElementById('timerVal').textContent = '0:00:00';
+  const gs = document.getElementById('gpsStatus');
+  gs.textContent = '📍 GPS active'; gs.className = 'gps-pill active';
+  document.querySelectorAll('#platformRow .platform-btn').forEach(b => b.disabled = false);
 }
 
-async function loadSummary() {
-  const year = document.getElementById('year-select').value;
-  const month = document.getElementById('month-select').value;
-  let url = `/api/summary?year=${year}`;
-  if (month) url += `&month=${month}`;
+function openEndModal() {
+  const est = estimateMiles(routePoints);
+  document.getElementById('milesInput').value = est > 0 ? est.toFixed(1) : '';
+  document.getElementById('notesInput').value = '';
+  document.getElementById('tripModal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('tripModal').style.display = 'none'; }
 
-  const data = await fetch(url).then(r => r.json());
-  document.getElementById('sum-miles').textContent = data.total_miles.toLocaleString();
-  document.getElementById('sum-trips').textContent = `${data.trip_count} trip${data.trip_count !== 1 ? 's' : ''}`;
-  document.getElementById('sum-deduction').textContent = `$${data.deduction.toLocaleString('en-US', {minimumFractionDigits:2})}`;
-
-  const bp = document.getElementById('by-platform');
-  if (Object.keys(data.by_platform).length === 0) {
-    bp.innerHTML = '<span style="color:var(--muted)">No trips yet</span>';
-  } else {
-    bp.innerHTML = Object.entries(data.by_platform)
-      .sort((a,b) => b[1]-a[1])
-      .map(([p,m]) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-        <span>${p}</span><span style="font-weight:600">${m.toFixed(1)} mi</span></div>`)
-      .join('');
-  }
+function discardTrip() {
+  stopTrip(); closeModal(); routePoints = [];
+  showToast('🗑 Trip discarded');
 }
 
-async function loadHistory() {
-  const trips = await fetch('/api/trips').then(r => r.json());
-  const container = document.getElementById('history-list');
-  if (trips.length === 0) {
-    container.innerHTML = '<div class="empty-state">No trips logged yet.<br>Start tracking to see your history.</div>';
+async function saveTrip() {
+  const miles = parseFloat(document.getElementById('milesInput').value);
+  if (!miles || miles <= 0) {
+    alert('Enter how many miles you drove, or tap "Discard Trip" to cancel without saving.');
     return;
   }
-  container.innerHTML = trips.map(t => `
-    <div class="trip-card">
-      <div class="trip-info">
-        <span class="trip-platform platform-${t.platform.toLowerCase()}">${t.platform}</span>
-        <div class="trip-date">${t.date}${t.start_time ? ' · ' + t.start_time + ' – ' + (t.end_time || '?') : ''}</div>
-        ${t.notes ? `<div class="trip-notes">${t.notes}</div>` : ''}
+  const notes = document.getElementById('notesInput').value;
+  const now = new Date();
+  await fetch('/api/trips', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user: currentUser, date: today(), platform: currentPlatform, miles, notes,
+      start_time: tripStartTime ? tripStartTime.toISOString() : '',
+      end_time: now.toISOString(),
+      route_points: routePoints
+    })
+  });
+  stopTrip(); closeModal(); routePoints = [];
+  currentPlatform = null;
+  document.querySelectorAll('#platformRow .platform-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('trackBtn').disabled = true;
+  showToast(`✅ ${miles} miles saved!`);
+}
+
+// Past Trip
+function openPastModal() {
+  pastPlatform = null;
+  document.getElementById('pastDate').value = today();
+  document.getElementById('pastMiles').value = '';
+  document.getElementById('pastNotes').value = '';
+  document.querySelectorAll('#pastPlatformRow .platform-btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('pastModal').style.display = 'flex';
+}
+function closePastModal() { document.getElementById('pastModal').style.display = 'none'; }
+
+async function savePastTrip() {
+  const date = document.getElementById('pastDate').value;
+  const miles = parseFloat(document.getElementById('pastMiles').value);
+  const notes = document.getElementById('pastNotes').value;
+  if (!pastPlatform) { alert('Select a platform.'); return; }
+  if (!miles || miles <= 0) { alert('Enter miles driven.'); return; }
+  if (!date) { alert('Pick a date.'); return; }
+  await fetch('/api/trips', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user: currentUser, date, platform: pastPlatform, miles, notes, route_points: [] })
+  });
+  closePastModal();
+  showToast(`✅ ${miles} miles logged!`);
+}
+
+// History
+async function loadHistory() {
+  const res = await fetch(`/api/trips?user=${encodeURIComponent(currentUser)}`);
+  tripsCache = await res.json();
+  const el = document.getElementById('historyList');
+  if (!tripsCache.length) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">🚗</div><p>No trips logged yet.</p></div>';
+    return;
+  }
+  el.innerHTML = tripsCache.map(t => {
+    const ded = (t.miles * 0.70).toFixed(2);
+    let pts = [];
+    try { pts = JSON.parse(t.route_points || '[]'); } catch {}
+    const hasRoute = pts.length >= 2;
+    return `<div class="trip-card">
+      <div class="tc-top">
+        <div>
+          <div class="tc-date">${fmtDate(t.date)}</div>
+          <div class="tc-platform">${t.platform}</div>
+        </div>
+        <div class="tc-right">
+          <div class="tc-miles">${t.miles} mi</div>
+          <div class="tc-ded">$${ded} deduction</div>
+        </div>
       </div>
-      <div>
-        <div class="trip-miles">${parseFloat(t.miles).toFixed(1)} mi</div>
-        <div class="trip-deduction">$${(t.miles * 0.70).toFixed(2)}</div>
-        <button class="delete-btn" onclick="deleteTrip(${t.id})">🗑</button>
+      ${t.notes ? `<div class="tc-notes">📝 ${t.notes}</div>` : ''}
+      <div class="tc-actions">
+        ${hasRoute
+          ? `<button class="btn-route" onclick="viewRoute(${t.id},'${t.date}','${t.platform}',${t.miles})">📍 View Route</button>`
+          : `<span></span>`}
+        <button class="btn-del" onclick="deleteTrip(${t.id})">🗑</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 async function deleteTrip(id) {
   if (!confirm('Delete this trip?')) return;
-  await fetch(`/api/trips/${id}`, {method:'DELETE'});
-  loadHistory();
+  await fetch(`/api/trips/${id}`, { method: 'DELETE' });
+  loadHistory(); showToast('Trip deleted');
+}
+
+// Map
+function viewRoute(tripId, date, platform, miles) {
+  const trip = tripsCache.find(t => t.id === tripId);
+  if (!trip) return;
+  let pts = [];
+  try { pts = JSON.parse(trip.route_points); } catch { return; }
+  if (pts.length < 2) return;
+
+  document.getElementById('mapTitle').textContent = `${platform} · ${fmtDate(date)}`;
+  document.getElementById('mapInfo').innerHTML = [
+    ['Date', fmtDate(date)], ['Platform', platform],
+    ['Miles', `${miles} mi`], ['Deduction', `$${(miles*0.70).toFixed(2)}`],
+    ['GPS points recorded', pts.length]
+  ].map(([l,v]) =>
+    `<div class="map-info-row"><span class="ml">${l}</span><span class="mr">${v}</span></div>`
+  ).join('');
+
+  document.getElementById('mapModal').style.display = 'flex';
+  if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+  const mapEl = document.getElementById('mapEl');
+  mapEl.innerHTML = '';
+  mapEl.style.height = '280px';
+
+  setTimeout(() => {
+    leafletMap = L.map('mapEl');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(leafletMap);
+    const lls = pts.map(p => [p.lat, p.lng]);
+    L.polyline(lls, { color: '#1a7a4a', weight: 5, opacity: 0.85 }).addTo(leafletMap);
+    L.circleMarker(lls[0], { radius: 9, fillColor: '#25a870', color: 'white', weight: 2.5, fillOpacity: 1 })
+      .addTo(leafletMap).bindPopup('Start');
+    L.circleMarker(lls[lls.length-1], { radius: 9, fillColor: '#e74c3c', color: 'white', weight: 2.5, fillOpacity: 1 })
+      .addTo(leafletMap).bindPopup('End');
+    leafletMap.fitBounds(lls, { padding: [24, 24] });
+  }, 120);
+}
+
+function closeMapModal() {
+  document.getElementById('mapModal').style.display = 'none';
+  if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+}
+
+// Summary
+async function loadSummary() {
+  const year = document.getElementById('summaryYear').value;
+  const month = document.getElementById('summaryMonth').value;
+  const p = new URLSearchParams({ user: currentUser, year });
+  if (month) p.set('month', month);
+  const res = await fetch(`/api/summary?${p}`);
+  const d = await res.json();
+  document.getElementById('sMiles').textContent = d.total_miles;
+  document.getElementById('sDed').textContent = `$${d.deduction}`;
+  document.getElementById('sTrips').textContent = d.trip_count;
+  document.getElementById('sExp').textContent = `$${d.total_expenses}`;
+
+  const platEntries = Object.entries(d.by_platform);
+  document.getElementById('platformBreakdown').innerHTML = platEntries.length ? `
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+      <div class="section-lbl" style="margin-bottom:6px">By Platform</div>
+      ${platEntries.map(([pl,m]) =>
+        `<div class="breakdown-row"><span>${pl}</span><span><strong>${m.toFixed(1)} mi</strong> · $${(m*0.70).toFixed(2)}</span></div>`
+      ).join('')}
+    </div>` : '';
+
+  const catEntries = Object.entries(d.by_category);
+  document.getElementById('categoryBreakdown').innerHTML = catEntries.length ? `
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <div class="section-lbl" style="margin-bottom:6px">Expenses by Category</div>
+      ${catEntries.map(([c,a]) =>
+        `<div class="breakdown-row"><span>${c}</span><span><strong>$${a.toFixed(2)}</strong></span></div>`
+      ).join('')}
+    </div>` : '';
 }
 
 function exportCSV() {
-  const year = document.getElementById('year-select').value;
-  window.location.href = `/api/export?year=${year}`;
+  const year = document.getElementById('summaryYear').value;
+  const a = document.createElement('a');
+  a.href = `/api/export?user=${encodeURIComponent(currentUser)}&year=${year}`;
+  a.download = `mileage_${currentUser}_${year}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// Expenses
+function selectCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+async function saveExpense() {
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  const date = document.getElementById('expDate').value;
+  const notes = document.getElementById('expNotes').value;
+  if (!currentCat) { alert('Select a category.'); return; }
+  if (!amount || amount <= 0) { alert('Enter an amount.'); return; }
+  if (!date) { alert('Pick a date.'); return; }
+  await fetch('/api/expenses', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user: currentUser, date, category: currentCat, amount, notes })
+  });
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expNotes').value = '';
+  document.getElementById('expDate').value = today();
+  currentCat = null;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
+  loadExpenses();
+  showToast(`✅ $${amount.toFixed(2)} saved!`);
+}
+
+async function loadExpenses() {
+  const res = await fetch(`/api/expenses?user=${encodeURIComponent(currentUser)}`);
+  const exps = await res.json();
+  const el = document.getElementById('expenseList');
+  if (!exps.length) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">💳</div><p>No expenses logged yet.</p></div>';
+    return;
+  }
+  el.innerHTML = exps.map(e => `
+    <div class="exp-card">
+      <div>
+        <div class="exp-cat">${e.category}</div>
+        <div class="exp-meta">${fmtDate(e.date)}${e.notes ? ' · ' + e.notes : ''}</div>
+      </div>
+      <div>
+        <div class="exp-amt">$${parseFloat(e.amount).toFixed(2)}</div>
+        <button class="exp-del" onclick="deleteExpense(${e.id})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+  loadExpenses(); showToast('Expense deleted');
+}
+
+// Utilities
+function estimateMiles(pts) {
+  if (pts.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) total += haversine(pts[i-1], pts[i]);
+  return Math.round(total * 10) / 10;
+}
+
+function haversine(a, b) {
+  const R = 3958.8;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const x = Math.sin(dLat/2)**2 +
+    Math.cos(a.lat*Math.PI/180) * Math.cos(b.lat*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+function fmtDate(str) {
+  if (!str) return '';
+  const [y,m,d] = str.split('-');
+  return `${'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[+m-1]} ${+d}, ${y}`;
 }
 
 function showToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:12px 24px;border-radius:30px;font-weight:600;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-// Init summary on load
-loadSummary();
+// Boot
+(function() {
+  const saved = localStorage.getItem('milesUser');
+  if (saved) {
+    currentUser = saved;
+    document.getElementById('profilePicker').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('headerUser').textContent = saved;
+    initApp();
+  } else {
+    renderProfileList();
+  }
+})();
 </script>
 </body>
 </html>
