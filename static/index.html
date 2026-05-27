@@ -487,8 +487,8 @@ header {
 <script>
 // State
 let currentUser = null;
-let currentPlatform = null;
-let pastPlatform = null;
+let currentPlatforms = new Set();
+let pastPlatforms = new Set();
 let isTracking = false;
 let tripStartTime = null;
 let timerInterval = null;
@@ -558,6 +558,7 @@ function initApp() {
     yearSel.appendChild(o);
   }
   document.getElementById('expDate').value = today();
+  restoreTripIfActive();
   setupGPS();
 }
 
@@ -590,18 +591,79 @@ function switchTab(tab) {
   if (tab === 'expenses') loadExpenses();
 }
 
+// Trip state persistence
+function saveTripState() {
+  localStorage.setItem('activeTripState', JSON.stringify({
+    isTracking: true,
+    tripStartTime: tripStartTime ? tripStartTime.toISOString() : null,
+    currentPlatforms: [...currentPlatforms],
+    routePoints
+  }));
+}
+function clearTripState() { localStorage.removeItem('activeTripState'); }
+
+function restoreTripIfActive() {
+  const saved = localStorage.getItem('activeTripState');
+  if (!saved) return;
+  try {
+    const state = JSON.parse(saved);
+    if (!state.isTracking || !state.tripStartTime) return;
+    currentPlatforms = new Set(state.currentPlatforms);
+    tripStartTime = new Date(state.tripStartTime);
+    routePoints = state.routePoints || [];
+    isTracking = true;
+    document.querySelectorAll('#platformRow .platform-btn').forEach(b => {
+      const label = b.textContent.trim().split('\n').pop().trim();
+      if (currentPlatforms.has(label)) b.classList.add('sel');
+      b.disabled = true;
+    });
+    const btn = document.getElementById('trackBtn');
+    btn.textContent = 'End Trip'; btn.classList.add('red'); btn.disabled = false;
+    document.getElementById('timerWrap').style.display = 'block';
+    timerInterval = setInterval(() => {
+      const s = Math.floor((Date.now() - tripStartTime) / 1000);
+      document.getElementById('timerVal').textContent =
+        `${Math.floor(s/3600)}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    }, 1000);
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(pos => {
+        const now = Date.now();
+        if (now - lastWaypointTime >= 10000) {
+          routePoints.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, ts: now });
+          lastWaypointTime = now;
+          saveTripState();
+          const el = document.getElementById('gpsStatus');
+          el.textContent = `📍 GPS active — ${routePoints.length} point${routePoints.length !== 1 ? 's' : ''} recorded`;
+        }
+      }, () => {
+        const el = document.getElementById('gpsStatus');
+        el.textContent = '⚠️ GPS signal lost'; el.className = 'gps-pill warn';
+      }, { enableHighAccuracy: true, maximumAge: 5000 });
+    }
+    showToast('📍 Trip resumed');
+  } catch(e) { localStorage.removeItem('activeTripState'); }
+}
+
 // Platform
 function selectPlatform(name, btn) {
   if (isTracking) return;
-  currentPlatform = name;
-  document.querySelectorAll('#platformRow .platform-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
-  document.getElementById('trackBtn').disabled = false;
+  if (currentPlatforms.has(name)) {
+    currentPlatforms.delete(name);
+    btn.classList.remove('sel');
+  } else {
+    currentPlatforms.add(name);
+    btn.classList.add('sel');
+  }
+  document.getElementById('trackBtn').disabled = currentPlatforms.size === 0;
 }
 function selectPastPlatform(name, btn) {
-  pastPlatform = name;
-  document.querySelectorAll('#pastPlatformRow .platform-btn').forEach(b => b.classList.remove('sel'));
-  btn.classList.add('sel');
+  if (pastPlatforms.has(name)) {
+    pastPlatforms.delete(name);
+    btn.classList.remove('sel');
+  } else {
+    pastPlatforms.add(name);
+    btn.classList.add('sel');
+  }
 }
 
 // Tracking
@@ -610,11 +672,12 @@ function handleTrackBtn() {
 }
 
 function startTrip() {
-  if (!currentPlatform) return;
+  if (currentPlatforms.size === 0) return;
   isTracking = true;
   tripStartTime = new Date();
   routePoints = [];
   lastWaypointTime = 0;
+  saveTripState();
   const btn = document.getElementById('trackBtn');
   btn.textContent = 'End Trip'; btn.classList.add('red');
   document.getElementById('timerWrap').style.display = 'block';
@@ -643,6 +706,7 @@ function startTrip() {
 
 function stopTrip() {
   isTracking = false;
+  clearTripState();
   clearInterval(timerInterval);
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
   const btn = document.getElementById('trackBtn');
@@ -678,14 +742,14 @@ async function saveTrip() {
   await fetch('/api/trips', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      user: currentUser, date: today(), platform: currentPlatform, miles, notes,
+      user: currentUser, date: today(), platform: [...currentPlatforms].join('/'), miles, notes,
       start_time: tripStartTime ? tripStartTime.toISOString() : '',
       end_time: now.toISOString(),
       route_points: routePoints
     })
   });
   stopTrip(); closeModal(); routePoints = [];
-  currentPlatform = null;
+  currentPlatforms.clear();
   document.querySelectorAll('#platformRow .platform-btn').forEach(b => b.classList.remove('sel'));
   document.getElementById('trackBtn').disabled = true;
   showToast(`✅ ${miles} miles saved!`);
@@ -693,7 +757,7 @@ async function saveTrip() {
 
 // Past Trip
 function openPastModal() {
-  pastPlatform = null;
+  pastPlatforms.clear();
   document.getElementById('pastDate').value = today();
   document.getElementById('pastMiles').value = '';
   document.getElementById('pastNotes').value = '';
@@ -706,12 +770,12 @@ async function savePastTrip() {
   const date = document.getElementById('pastDate').value;
   const miles = parseFloat(document.getElementById('pastMiles').value);
   const notes = document.getElementById('pastNotes').value;
-  if (!pastPlatform) { alert('Select a platform.'); return; }
+  if (pastPlatforms.size === 0) { alert('Select a platform.'); return; }
   if (!miles || miles <= 0) { alert('Enter miles driven.'); return; }
   if (!date) { alert('Pick a date.'); return; }
   await fetch('/api/trips', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user: currentUser, date, platform: pastPlatform, miles, notes, route_points: [] })
+    body: JSON.stringify({ user: currentUser, date, platform: [...pastPlatforms].join('/'), miles, notes, route_points: [] })
   });
   closePastModal();
   showToast(`✅ ${miles} miles logged!`);
@@ -926,7 +990,7 @@ function showToast(msg) {
 }
 
 // Boot
-(function() {
+( unction() {
   const saved = localStorage.getItem('milesUser');
   if (saved) {
     currentUser = saved;
