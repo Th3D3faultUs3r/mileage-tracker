@@ -495,6 +495,8 @@ let timerInterval = null;
 let watchId = null;
 let routePoints = [];
 let lastWaypointTime = 0;
+let wakeLock = null;
+let keepAliveCtx = null;
 let leafletMap = null;
 let tripsCache = [];
 let currentCat = null;
@@ -671,12 +673,29 @@ function handleTrackBtn() {
   if (!isTracking) startTrip(); else openEndModal();
 }
 
-function startTrip() {
+async function startTrip() {
   if (currentPlatforms.size === 0) return;
   isTracking = true;
   tripStartTime = new Date();
   routePoints = [];
   lastWaypointTime = 0;
+  // Keep screen on so iOS doesn't kill GPS
+  if (navigator.wakeLock) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+  }
+  // Silent audio loop as backup keep-alive for Safari background
+  try {
+    keepAliveCtx = new (window.AudioContext || window.webkitAudioContext)();
+    (function pulse() {
+      if (!isTracking || !keepAliveCtx) return;
+      const buf = keepAliveCtx.createBuffer(1, 1, 22050);
+      const src = keepAliveCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(keepAliveCtx.destination);
+      src.onended = pulse;
+      src.start(keepAliveCtx.currentTime);
+    })();
+  } catch(e) {}
   saveTripState();
   const btn = document.getElementById('trackBtn');
   btn.textContent = 'End Trip'; btn.classList.add('red');
@@ -693,6 +712,7 @@ function startTrip() {
       if (now - lastWaypointTime >= 10000) {
         routePoints.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, ts: now });
         lastWaypointTime = now;
+        saveTripState();
         const el = document.getElementById('gpsStatus');
         el.textContent = `📍 GPS active — ${routePoints.length} point${routePoints.length !== 1 ? 's' : ''} recorded`;
       }
@@ -702,11 +722,15 @@ function startTrip() {
       el.className = 'gps-pill warn';
     }, { enableHighAccuracy: true, maximumAge: 5000 });
   }
+  const gs = document.getElementById('gpsStatus');
+  gs.textContent = '📍 GPS active — keep screen on!';
 }
 
 function stopTrip() {
   isTracking = false;
   clearTripState();
+  if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
+  if (keepAliveCtx) { keepAliveCtx.close().catch(()=>{}); keepAliveCtx = null; }
   clearInterval(timerInterval);
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
   const btn = document.getElementById('trackBtn');
@@ -989,8 +1013,15 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2600);
 }
 
+// Re-acquire wake lock when user returns to app tab
+document.addEventListener('visibilitychange', async () => {
+  if (isTracking && document.visibilityState === 'visible' && navigator.wakeLock) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
+  }
+});
+
 // Boot
-( unction() {
+(function() {
   const saved = localStorage.getItem('milesUser');
   if (saved) {
     currentUser = saved;
