@@ -301,7 +301,7 @@ header {
     <h1>Mileage Tracker</h1>
     <p class="pp-sub">Who's driving today?</p>
     <div class="profile-list" id="profileList"></div>
-    <button type="button" class="btn-add-profile" onclick="showAddProfile()">+ Add Person</button>
+    <button type="button" class="btn-add-profile" ontouchstart="event.preventDefault();showAddProfile()" onclick="showAddProfile()">+ Add Person</button>
     <div class="add-profile-form" id="addProfileForm" style="display:none">
       <input type="text" id="newProfileName" placeholder="Your name" maxlength="20" autocomplete="off"
              onkeydown="if(event.key==='Enter')addProfile()">
